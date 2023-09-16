@@ -1,0 +1,83 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.5.9'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id "org.asciidoctor.jvm.convert" version "3.3.2"//rest doc
+}
+
+group = 'com.hodolog'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+
+    asciidoctorExt//rest doc
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    asciidocVersion = "2.0.6.RELEASE"//rest doc
+    snippetsDir = file('build/generated-snippets')//rest doc : 테스트 케이스를 통해 생성되는 아스키독의 위치
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'com.querydsl:querydsl-core'
+    implementation 'com.querydsl:querydsl-jpa'
+
+    asciidoctorExt "org.springframework.restdocs:spring-restdocs-asciidoctor:${asciidocVersion}"//rest doc
+    testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc:${asciidocVersion}"//rest doc
+
+    annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jpa"
+    annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+    annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
+
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+test {
+    outputs.dir snippetsDir//rest doc
+}
+
+asciidoctor {//rest doc
+    inputs.dir snippetsDir
+    configurations 'asciidoctorExt'
+    dependsOn test
+}
+
+asciidoctor.doFirst {
+    delete file("src/main/resources/static/docs")
+}
+
+bootJar {//rest doc : jar파일에 asciidoc 도 build파일에 포함되도록 설정
+    dependsOn asciidoctor
+
+    copy {//into에 해당하는 경로에 index.html파일이 생성됨
+        //프로젝트 실행 후 /docs/index.html 의 경로로 열면 파일을 웹에서 볼 수 있음
+        from asciidoctor.outputDir
+        into "src/main/resources/static/docs"
+    }
+}
+
+
+
+
+
+
+
